@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071A22">
+<title>塑源 · 北京海洋馆 AR 环保科普设计 | 于嘉润</title>
+<meta name="description" content="《塑源》是一件面向北京海洋馆的 AR 环保科普设计：以手绘水彩视觉为识别载体，用手机扫描画面进入海洋垃圾清理小游戏，让游客在互动中理解塑料污染对海洋生物的伤害。">
+<style>
+/* ============ 基础与主题 ============ */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#071A22; --bg2:#0A232E; --panel:rgba(255,255,255,.045); --panel2:rgba(255,255,255,.07);
+  --ink:#EAF5F5; --muted:#8FB0BA; --line:rgba(143,224,224,.16);
+  --teal:#4FE0C8; --blue:#56A8FF; --coral:#FF8E72; --sand:#F2E3C6; --gold:#F3C969;
+  --shadow:0 18px 50px rgba(0,0,0,.35); --r:18px;
+  --sans:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,sans-serif;
+  --serif:"Source Han Serif SC","Noto Serif SC","Songti SC","STZhongsong","SimSun",serif;
+}
+html[data-theme="light"]{
+  --bg:#F4F1E9; --bg2:#EBE6DA; --panel:#FFFFFF; --panel2:#F7F3EA;
+  --ink:#12262C; --muted:#5C757C; --line:rgba(18,38,44,.12);
+  --teal:#0E9C8A; --blue:#1F6FD0; --coral:#D9603F; --sand:#7A5B33; --gold:#B98A2A;
+  --shadow:0 18px 44px rgba(30,50,50,.12);
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--sans); line-height:1.75;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  transition:background .5s,color .5s;
+}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+::selection{background:rgba(79,224,200,.28)}
+
+/* ============ 顶部进度与导航 ============ */
+#progress{position:fixed;top:0;left:0;height:2px;width:0;background:linear-gradient(90deg,var(--teal),var(--blue));z-index:120;transition:width .1s linear}
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:110;display:flex;align-items:center;justify-content:space-between;
+  padding:14px max(20px,4vw);backdrop-filter:blur(14px);
+  background:linear-gradient(180deg,rgba(7,26,34,.86),rgba(7,26,34,0));
+}
+html[data-theme="light"] .topbar{background:linear-gradient(180deg,rgba(244,241,233,.9),rgba(244,241,233,0))}
+.brand{display:flex;align-items:baseline;gap:10px;font-family:var(--serif);font-size:20px;letter-spacing:.18em}
+.brand small{font-family:var(--sans);font-size:10px;letter-spacing:.28em;color:var(--muted)}
+.nav-actions{display:flex;gap:10px;align-items:center}
+.icon-btn{width:40px;height:40px;border:1px solid var(--line);border-radius:12px;display:grid;place-items:center;background:var(--panel);transition:.25s}
+.icon-btn:hover{border-color:var(--teal);transform:translateY(-1px)}
+.icon-btn svg{width:18px;height:18px;stroke:var(--ink);fill:none;stroke-width:1.6}
+.menu-btn{display:flex;gap:8px;align-items:center;padding:0 16px;height:40px;border:1px solid var(--line);border-radius:12px;background:var(--panel);font-size:12px;letter-spacing:.16em}
+.menu-btn:hover{border-color:var(--teal)}
+
+/* 侧边章节点 */
+.dots{position:fixed;right:22px;top:50%;transform:translateY(-50%);z-index:100;display:flex;flex-direction:column;gap:12px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--line);position:relative;transition:.3s}
+.dot::after{content:attr(data-label);position:absolute;right:18px;top:50%;transform:translateY(-50%) translateX(6px);
+  white-space:nowrap;font-size:11px;letter-spacing:.12em;color:var(--muted);opacity:0;transition:.25s;pointer-events:none}
+.dot:hover::after,.dot.active::after{opacity:1;transform:translateY(-50%) translateX(0)}
+.dot.active{background:var(--teal);box-shadow:0 0 0 4px rgba(79,224,200,.16)}
+@media(max-width:900px){.dots{display:none}}
+
+/* 章节菜单覆盖层 */
+.menu-overlay{position:fixed;inset:0;z-index:130;background:rgba(5,18,24,.96);backdrop-filter:blur(18px);
+  display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.35s}
+html[data-theme="light"] .menu-overlay{background:rgba(244,241,233,.97)}
+.menu-overlay.open{opacity:1;pointer-events:auto}
+.menu-inner{width:min(860px,88vw)}
+.menu-inner h3{font-family:var(--serif);font-size:13px;letter-spacing:.3em;color:var(--muted);margin-bottom:22px}
+.menu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.menu-grid a{padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--panel);display:flex;gap:12px;align-items:baseline;transition:.25s}
+.menu-grid a:hover{border-color:var(--teal);transform:translateY(-2px)}
+.menu-grid a b{font-family:var(--serif);font-size:12px;color:var(--teal);font-weight:400}
+.menu-grid a span{font-size:14px}
+.menu-close{position:absolute;top:24px;right:24px}
+@media(max-width:760px){.menu-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* ============ 通用排版 ============ */
+.wrap{width:min(1180px,90vw);margin:0 auto}
+section{position:relative;padding:clamp(72px,9vw,120px) 0}
+.eyebrow{display:flex;align-items:center;gap:14px;font-size:11px;letter-spacing:.26em;color:var(--teal);margin-bottom:18px}
+.eyebrow::after{content:"";height:1px;flex:1;background:var(--line)}
+h2{font-family:var(--serif);font-weight:600;font-size:clamp(28px,3.4vw,44px);letter-spacing:.06em;line-height:1.35}
+.lead{color:var(--muted);max-width:760px;margin-top:16px;font-size:15px}
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:24px}
+.grid{display:grid;gap:18px}
+.muted{color:var(--muted)}
+.tag{display:inline-block;padding:4px 11px;border:1px solid var(--line);border-radius:999px;font-size:11px;letter-spacing:.08em;color:var(--muted)}
+
+/* ============ Hero ============ */
+#hero{min-height:100svh;display:flex;align-items:center;padding:0;overflow:hidden}
+html.static #hero{min-height:820px} html.static .hero-inner{padding-top:120px}
+.hero-bg{position:absolute;inset:0;background:url("assets/cover.jpg") center/cover no-repeat;opacity:.55;transform:scale(1.06)}
+.hero-mask{position:absolute;inset:0;background:
+  radial-gradient(120% 90% at 70% 20%,rgba(6,26,34,.15),rgba(6,26,34,.85) 62%),
+  linear-gradient(180deg,rgba(7,26,34,.55),rgba(7,26,34,.92))}
+html[data-theme="light"] .hero-mask{background:
+  radial-gradient(120% 90% at 70% 20%,rgba(244,241,233,.05),rgba(244,241,233,.86) 62%),
+  linear-gradient(180deg,rgba(244,241,233,.5),rgba(244,241,233,.94))}
+.bubbles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.bubble{position:absolute;bottom:-60px;border-radius:50%;border:1px solid rgba(79,224,200,.35);background:radial-gradient(circle at 32% 30%,rgba(160,245,235,.35),rgba(79,224,200,.02) 70%);
+  animation:rise linear infinite}
+@keyframes rise{0%{transform:translate3d(0,0,0) scale(.7);opacity:0}12%{opacity:.75}100%{transform:translate3d(24px,-115vh,0) scale(1.15);opacity:0}}
+.hero-inner{position:relative;z-index:2;padding-top:9vh}
+.hero-meta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:26px}
+.hero-meta .tag{background:rgba(255,255,255,.05)}
+.hero-title{font-family:var(--serif);font-size:clamp(72px,13vw,150px);line-height:.95;letter-spacing:.1em;margin-left:-6px}
+.hero-en{margin-top:10px;font-size:12px;letter-spacing:.62em;color:var(--muted)}
+.hero-sub{margin-top:28px;font-size:clamp(16px,1.7vw,21px);letter-spacing:.08em}
+.hero-desc{margin-top:14px;max-width:560px;color:var(--muted);font-size:14px}
+.hero-foot{position:absolute;left:0;right:0;bottom:26px;z-index:2;display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:.2em;color:var(--muted)}
+.scroll-cue{display:flex;align-items:center;gap:10px}
+.scroll-cue i{display:block;width:1px;height:36px;background:linear-gradient(var(--teal),transparent);animation:cue 1.8s ease-in-out infinite}
+@keyframes cue{0%,100%{transform:scaleY(.5);opacity:.4}50%{transform:scaleY(1);opacity:1}}
+
+/* ============ 档案 ============ */
+.info-grid{grid-template-columns:repeat(4,1fr);margin-top:44px}
+.info-card{padding:22px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+.info-card span{font-size:11px;letter-spacing:.2em;color:var(--muted)}
+.info-card strong{display:block;margin-top:10px;font-size:17px;font-weight:600;font-family:var(--serif);letter-spacing:.04em}
+.info-card em{display:block;margin-top:6px;font-style:normal;font-size:12px;color:var(--muted)}
+.three{grid-template-columns:repeat(3,1fr);margin-top:18px}
+.three .card h3{font-size:14px;letter-spacing:.1em;color:var(--teal);margin-bottom:10px}
+.three .card p{font-size:13.5px;color:var(--muted)}
+
+/* ============ 调研 ============ */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:42px}
+.stat b{display:flex;align-items:baseline;flex-wrap:nowrap;font-family:var(--serif);font-size:clamp(34px,4vw,52px);line-height:1;font-weight:600;letter-spacing:.02em}
+.stat b i{font-style:normal;font-size:.42em;margin-left:4px;color:var(--muted)}
+.stat span{display:block;margin-top:10px;font-size:12px;color:var(--muted);letter-spacing:.04em}
+.research-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:34px;margin-top:40px;align-items:start}
+.bars{display:grid;gap:16px}
+.bar-row{display:grid;grid-template-columns:1fr auto;gap:6px 16px;font-size:13px}
+.bar-row .track{grid-column:1/-1;height:6px;border-radius:6px;background:var(--panel2);overflow:hidden}
+.bar-row .fill{height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--teal),var(--blue));transition:width 1.4s cubic-bezier(.2,.8,.2,1)}
+.bar-row b{font-weight:500;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.figure{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel)}
+.figure img{width:100%;height:100%;object-fit:cover}
+.figure figcaption{padding:12px 16px;font-size:11.5px;color:var(--muted);letter-spacing:.04em}
+.quote{margin-top:26px;padding:22px 24px;border-left:2px solid var(--teal);background:linear-gradient(90deg,rgba(79,224,200,.09),transparent);font-family:var(--serif);font-size:16px;line-height:1.9}
+
+/* ============ 竞品 ============ */
+.comp-grid{grid-template-columns:repeat(3,1fr);margin-top:38px}
+.comp{padding:24px;border:1px solid var(--line);border-radius:16px;background:var(--panel);display:flex;flex-direction:column;gap:14px}
+.comp header{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.comp h3{font-size:15px;letter-spacing:.04em}
+.comp header span{font-family:var(--serif);font-size:12px;color:var(--teal);letter-spacing:.14em}
+.comp p{font-size:13px;color:var(--muted)}
+.comp .weak{font-size:12.5px;color:var(--coral)}
+.gap-box{margin-top:18px;padding:26px;border:1px dashed var(--line);border-radius:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.gap-box h4{font-size:12px;letter-spacing:.18em;color:var(--teal);margin-bottom:8px}
+.gap-box p{font-size:13px;color:var(--muted)}
+
+/* ============ 概念 ============ */
+.chain{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:40px}
+.step{position:relative;padding:22px 20px;border:1px solid var(--line);border-radius:16px;background:var(--panel);min-height:150px}
+.step b{font-family:var(--serif);font-size:11px;letter-spacing:.2em;color:var(--teal)}
+.step h4{margin:10px 0 8px;font-size:15px}
+.step p{font-size:12.5px;color:var(--muted)}
+.step::after{content:"→";position:absolute;right:-14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;z-index:2}
+.step:last-child::after{display:none}
+.concept-quote{margin-top:26px;font-family:var(--serif);font-size:clamp(19px,2.3vw,27px);line-height:1.8;letter-spacing:.03em}
+.concept-quote span{color:var(--coral)}
+.formula{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:26px;font-size:13px;color:var(--muted)}
+.formula i{font-style:normal;padding:8px 16px;border:1px solid var(--line);border-radius:999px;color:var(--ink)}
+
+/* ============ 视觉 ============ */
+.visual-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:34px;margin-top:40px;align-items:start}
+.char-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.char{border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--panel)}
+.char img{aspect-ratio:1/1;object-fit:cover;width:100%}
+.char div{padding:12px 14px}
+.char b{font-size:13px;font-family:var(--serif);letter-spacing:.06em}
+.char span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:8px}
+.sw{height:66px;border-radius:12px;border:1px solid var(--line);position:relative;overflow:hidden;cursor:pointer}
+.sw span{position:absolute;left:8px;bottom:6px;font-size:10px;letter-spacing:.06em;color:#fff;mix-blend-mode:difference}
+.type-demo{margin-top:22px;padding:20px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+.type-demo b{display:block;font-family:var(--serif);font-size:26px;letter-spacing:.1em}
+.type-demo small{display:block;color:var(--muted);font-size:11px;letter-spacing:.18em;margin-top:6px}
+.type-demo p{margin-top:12px;font-size:12.5px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+
+/* ============ 交互 ============ */
+.tabs{display:flex;gap:10px;margin-top:34px;flex-wrap:wrap}
+.tab{padding:11px 20px;border-radius:999px;border:1px solid var(--line);font-size:13px;letter-spacing:.06em;color:var(--muted);transition:.25s}
+.tab.active{background:var(--teal);color:#052027;border-color:transparent;font-weight:600}
+html[data-theme="light"] .tab.active{color:#fff}
+.panel{display:none;margin-top:22px;grid-template-columns:1.05fr .95fr;gap:26px;align-items:start}
+.panel.show{display:grid}
+.spec{display:grid;gap:0;align-content:start}
+.spec-row{display:grid;grid-template-columns:88px 1fr;gap:16px;padding:15px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.spec-row span{color:var(--teal);font-size:11.5px;letter-spacing:.16em;padding-top:3px}
+.spec-row p{color:var(--muted)}
+.mock{border:1px solid var(--line);border-radius:18px;background:linear-gradient(160deg,rgba(79,224,200,.10),rgba(86,168,255,.06));padding:18px;min-height:270px;display:flex;flex-direction:column;justify-content:space-between}
+.mock-top{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.16em;color:var(--muted)}
+.mock-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+.mock-cell{aspect-ratio:1/1;border-radius:9px;background:rgba(255,255,255,.06);border:1px solid var(--line);display:grid;place-items:center} .mock-cell svg{width:56%;height:56%;stroke:var(--muted);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round} .mock-cell.hit svg{stroke:var(--teal)}
+.mock-cell.hit{background:rgba(79,224,200,.18);border-color:var(--teal)}
+.mock-bar{height:6px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden}
+.mock-bar i{display:block;height:100%;width:64%;background:linear-gradient(90deg,var(--gold),var(--coral))}
+.mock-note{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:8px}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:26px}
+.flow div{padding:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.flow div b{display:block;color:var(--ink);font-size:13px;margin-bottom:6px}
+.flow div em{display:block;font-style:normal;font-family:var(--serif);color:var(--teal);font-size:11px;letter-spacing:.18em;margin-bottom:8px}
+
+/* ============ 可玩原型 ============ */
+.game-wrap{display:grid;grid-template-columns:.9fr 1.1fr;gap:34px;margin-top:38px;align-items:start}
+.memory{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.mcard{aspect-ratio:1/1;border-radius:14px;border:1px solid var(--line);background:var(--panel);position:relative;perspective:700px;cursor:pointer}
+.mcard .inner{position:absolute;inset:0;transition:transform .45s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d}
+.mcard.flip .inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:14px;display:grid;place-items:center;backface-visibility:hidden}
+.face.back{background:linear-gradient(150deg,rgba(79,224,200,.14),rgba(86,168,255,.10));border:1px solid var(--line)}
+.face.back::after{content:"";width:18px;height:18px;border-radius:50%;border:1px solid rgba(79,224,200,.5)}
+.face.front{transform:rotateY(180deg);background:var(--panel2);border:1px solid var(--teal)}
+.face.front svg{width:44%;height:44%;stroke:var(--teal);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.mcard.matched .face.front{border-color:var(--gold);background:rgba(243,201,105,.12)}
+.mcard.matched .face.front svg{stroke:var(--gold)}
+.game-side .statline{display:flex;gap:26px;margin:4px 0 18px;font-size:13px;color:var(--muted)}
+.game-side .statline b{color:var(--ink);font-family:var(--serif);font-size:20px;margin-left:6px}
+.game-msg{min-height:52px;font-size:13px;color:var(--muted)}
+.game-msg strong{color:var(--gold)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:999px;border:1px solid var(--teal);color:var(--teal);font-size:12.5px;letter-spacing:.08em;transition:.25s}
+.btn:hover{background:var(--teal);color:#052027}
+.btn.solid{background:var(--teal);color:#052027;border-color:transparent;font-weight:600}
+.btn.solid:hover{filter:brightness(1.05)}
+.game-tip{font-size:11.5px;color:var(--muted);margin-top:14px;line-height:1.7}
+
+/* ============ 开发 ============ */
+.dev-grid{display:grid;grid-template-columns:1fr 1fr;gap:34px;margin-top:38px;align-items:start}
+.tech{display:flex;flex-wrap:wrap;gap:10px}
+.tech span{padding:9px 15px;border:1px solid var(--line);border-radius:10px;font-size:12.5px;background:var(--panel)}
+.key-list{display:grid;gap:14px;margin-top:22px}
+.key{padding:18px 20px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.key b{font-size:13.5px}
+.key p{font-size:12.5px;color:var(--muted);margin-top:6px}
+details{border-bottom:1px solid var(--line);padding:16px 0}
+details summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:16px;font-size:13.5px}
+details summary::-webkit-details-marker{display:none}
+details summary::after{content:"+";color:var(--teal);font-size:16px;line-height:1}
+details[open] summary::after{content:"−"}
+details p{margin-top:10px;font-size:12.5px;color:var(--muted)}
+
+/* ============ 时间线 ============ */
+.tl{position:relative;margin-top:40px;padding-left:26px}
+.tl::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--line)}
+.tl-item{position:relative;padding:0 0 26px 18px}
+.tl-item::before{content:"";position:absolute;left:-26px;top:8px;width:9px;height:9px;border-radius:50%;background:var(--bg);border:1px solid var(--teal)}
+.tl-item.done::before{background:var(--teal)}
+.tl-item h4{font-size:14px;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.tl-item h4 em{font-style:normal;font-size:11px;letter-spacing:.14em;color:var(--teal)}
+.tl-item p{font-size:12.5px;color:var(--muted);margin-top:4px}
+.legend{display:flex;gap:18px;font-size:11px;color:var(--muted);margin-top:6px}
+.versions{display:flex;gap:12px;overflow-x:auto;padding:6px 0 14px;margin-top:22px}
+.ver{flex:0 0 190px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.ver b{font-family:var(--serif);font-size:18px;letter-spacing:.06em}
+.ver span{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+.ver p{font-size:12px;color:var(--muted);margin-top:8px}
+
+/* 前后对比 */
+.compare{position:relative;margin-top:34px;border-radius:18px;overflow:hidden;border:1px solid var(--line);aspect-ratio:4/5;max-width:560px;background:#0A232E}
+.compare img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.compare .top-img{clip-path:inset(0 calc(100% - var(--cut,55%)) 0 0)}
+.compare input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;z-index:3}
+.compare .divider{position:absolute;top:0;bottom:0;left:var(--cut,55%);width:1px;background:var(--teal);z-index:2}
+.compare .divider::after{content:"↔";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:var(--teal);color:#052027;display:grid;place-items:center;font-size:13px}
+.compare .cap{position:absolute;bottom:12px;font-size:11px;letter-spacing:.1em;color:#fff;background:rgba(5,25,32,.55);padding:4px 10px;border-radius:999px;z-index:2}
+.compare .cap.l{left:12px}.compare .cap.r{right:12px}
+
+/* ============ 成果画廊 ============ */
+.gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:38px}
+.gal{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);cursor:zoom-in;background:var(--panel)}
+.gal img{aspect-ratio:4/3;object-fit:cover;width:100%;transition:transform .6s}
+.gal:hover img{transform:scale(1.05)}
+.gal span{position:absolute;left:10px;bottom:8px;font-size:10.5px;color:#fff;background:rgba(5,25,32,.5);padding:3px 9px;border-radius:999px}
+.result-facts{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:24px}
+.result-facts div{padding-top:16px;border-top:1px solid var(--line)}
+.result-facts b{font-family:var(--serif);font-size:26px}
+.result-facts span{display:block;font-size:11.5px;color:var(--muted);margin-top:4px}
+
+/* Lightbox */
+.lightbox{position:fixed;inset:0;z-index:140;background:rgba(4,16,21,.94);display:none;align-items:center;justify-content:center;padding:4vw}
+.lightbox.open{display:flex}
+.lightbox img{max-width:92vw;max-height:80vh;border-radius:12px}
+.lightbox p{position:absolute;bottom:5vh;left:0;right:0;text-align:center;font-size:12px;color:#cfe3e3;letter-spacing:.06em}
+
+/* ============ 反思 / 尾页 ============ */
+.reflect{grid-template-columns:repeat(3,1fr);margin-top:38px}
+.reflect .card h3{font-family:var(--serif);font-size:16px;letter-spacing:.06em;margin-bottom:12px}
+.reflect .card p{font-size:13px;color:var(--muted)}
+.reflect .card ul{list-style:none;display:grid;gap:8px;margin-top:10px}
+.reflect .card li{font-size:12.5px;color:var(--muted);padding-left:14px;position:relative}
+.reflect .card li::before{content:"";position:absolute;left:0;top:9px;width:5px;height:5px;border-radius:50%;background:var(--teal)}
+#end{padding:clamp(80px,12vw,150px) 0 40px;text-align:left}
+.end-title{font-family:var(--serif);font-size:clamp(32px,5.4vw,62px);line-height:1.3;letter-spacing:.04em}
+.end-title span{color:var(--teal)}
+.end-meta{display:flex;gap:36px;flex-wrap:wrap;margin-top:38px;font-size:12.5px;color:var(--muted)}
+.end-meta b{display:block;color:var(--ink);font-size:14px;font-family:var(--serif);letter-spacing:.06em;margin-bottom:4px}
+footer{border-top:1px solid var(--line);margin-top:60px;padding:22px 0 30px;display:flex;justify-content:space-between;gap:16px;font-size:11px;color:var(--muted);flex-wrap:wrap}
+
+/* 返回顶部 / 翻页 */
+.to-top{position:fixed;right:22px;bottom:24px;z-index:105;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center;opacity:0;pointer-events:none;transition:.3s;backdrop-filter:blur(8px)}
+.to-top.show{opacity:1;pointer-events:auto}
+.to-top svg{width:16px;height:16px;stroke:var(--ink);fill:none;stroke-width:1.8}
+.pager{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:105;display:none;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px;backdrop-filter:blur(10px)}
+.pager button{padding:8px 16px;font-size:12px;border-radius:999px;color:var(--muted)}
+.pager button:hover{background:var(--panel2);color:var(--ink)}
+.pager span{font-size:11px;color:var(--muted);padding:0 8px;align-self:center}
+@media(max-width:900px){
+  .pager{display:flex}
+  .to-top{bottom:78px}
+  .info-grid,.stat-row,.result-facts{grid-template-columns:repeat(2,1fr)}
+  .three,.comp-grid,.chain,.flow,.reflect,.gap-box,.menu-grid{grid-template-columns:1fr 1fr}
+  .research-grid,.visual-grid,.game-wrap,.dev-grid,.panel{grid-template-columns:1fr}
+  .gallery{grid-template-columns:1fr 1fr}
+  .char-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:560px){
+  .three,.comp-grid,.chain,.flow,.reflect,.gap-box,.info-grid{grid-template-columns:1fr}
+  .step::after{display:none}
+  .hero-title{letter-spacing:.06em}
+  .hero-foot{font-size:9.5px}
+  .swatches{grid-template-columns:repeat(2,1fr)}
+  .menu-grid{grid-template-columns:1fr}
+  .card{padding:20px}
+  .mcard{border-radius:12px}
+  .face{border-radius:12px}
+}
+/* 截图 / 单节聚焦模式 */
+html.focus-mode .topbar,html.focus-mode .dots,html.focus-mode .pager,html.focus-mode .to-top{display:none!important}
+html.focus-mode section{display:none!important}
+html.focus-mode section.focus{display:block!important;padding-top:64px;padding-bottom:48px;min-height:100vh}
+html.focus-mode #hero.focus{display:flex!important;min-height:100vh;padding-top:0}
+@media(max-width:560px){
+  .topbar{padding:12px 16px}
+  .brand{font-size:18px;letter-spacing:.12em}
+  .brand small{display:none}
+  .menu-btn{padding:0 12px;font-size:11px;letter-spacing:.08em;gap:6px}
+  .icon-btn{width:36px;height:36px}
+  .pager{bottom:12px}
+  .hero-foot{bottom:78px}
+}
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.001s!important;transition-duration:.001s!important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<header class="topbar">
+  <a class="brand" href="#hero">塑源<small>SU YUAN</small></a>
+  <div class="nav-actions">
+    <button class="icon-btn" id="themeBtn" aria-label="切换明暗主题">
+      <svg viewBox="0 0 24 24"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8Z"/></svg>
+    </button>
+    <button class="menu-btn" id="menuBtn">章节导航 <span aria-hidden="true">☰</span></button>
+  </div>
+</header>
+
+<nav class="dots" id="dots" aria-label="章节导航"></nav>
+
+<div class="menu-overlay" id="menuOverlay">
+  <button class="icon-btn menu-close" id="menuClose" aria-label="关闭">
+    <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+  <div class="menu-inner">
+    <h3>CONTENTS · 十三个章节</h3>
+    <div class="menu-grid" id="menuGrid"></div>
+  </div>
+</div>
+
+<!-- ============ 01 封面 ============ -->
+<section id="hero" data-label="封面">
+  <div class="hero-bg" id="heroBg"></div>
+  <div class="hero-mask"></div>
+  <div class="bubbles" id="bubbles"></div>
+  <div class="wrap hero-inner">
+    <div class="hero-meta">
+      <span class="tag">毕业设计</span>
+      <span class="tag">AR 环保科普</span>
+      <span class="tag">北京海洋馆</span>
+      <span class="tag">2026</span>
+    </div>
+    <h1 class="hero-title">塑源</h1>
+    <div class="hero-en">S U   Y U A N</div>
+    <p class="hero-sub">北京海洋馆 AR 环保科普设计</p>
+    <p class="hero-desc">用手机扫描一幅手绘海洋画面，进入一场清理海洋垃圾的小游戏——让「海洋塑料污染」从一句口号，变成一次亲手参与的体验。</p>
+  </div>
+  <div class="wrap hero-foot">
+    <span>于嘉润 · 数字媒体艺术 · 2027 届</span>
+    <span class="scroll-cue">向下滚动<i></i></span>
+  </div>
+</section>
+
+<!-- ============ 02 作品档案 ============ -->
+<section id="info" data-label="作品档案">
+  <div class="wrap">
+    <div class="eyebrow">01 — PROJECT FILE</div>
+    <h2 class="reveal">作品档案</h2>
+    <p class="lead reveal">一件为北京海洋馆设计的轻量化 AR 环保科普作品：不依赖昂贵设备，用游客自己的手机，把静态展陈变成可参与的科普现场。</p>
+
+    <div class="grid info-grid">
+      <div class="info-card reveal"><span>作品名称</span><strong>塑源</strong><em>Suyuan · AR 环保科普</em></div>
+      <div class="info-card reveal"><span>作品类型</span><strong>毕业设计</strong><em>AR 互动 · 科普展陈</em></div>
+      <div class="info-card reveal"><span>时间</span><strong>2026</strong><em>北京工业大学耿丹学院</em></div>
+      <div class="info-card reveal"><span>作者 / 角色</span><strong>于嘉润</strong><em>独立完成视觉与交互</em></div>
+    </div>
+
+    <div class="grid three">
+      <div class="card reveal"><h3>项目背景</h3><p>北京海洋馆现有展陈以生物观赏为主，环保科普多为静态展板：文字多、画面单一、缺少互动。场馆缺少与「海洋塑料污染」相关的沉浸式科普内容。</p></div>
+      <div class="card reveal"><h3>目标用户</h3><p>以亲子家庭与青少年为主（问卷中 12 岁以下儿童与 31—45 岁家长各占三成），兼顾研学团体与结伴游客，需要在 1—3 分钟内完成一次有记忆点的体验。</p></div>
+      <div class="card reveal"><h3>要解决的问题</h3><p>游客知道「海洋垃圾有害」，却说不清垃圾如何具体伤害海龟、海狮。本作要把抽象的污染议题，转译为看得见、玩得到、记得住的互动叙事。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 03 调研 ============ -->
+<section id="research" data-label="调研发现">
+  <div class="wrap">
+    <div class="eyebrow">02 — RESEARCH</div>
+    <h2 class="reveal">调研发现</h2>
+    <p class="lead reveal">面向海洋馆游客及到访过海洋馆的同学、亲友发放问卷，回收有效样本 62 份，覆盖儿童、青少年、青年与亲子家长。</p>
+
+    <div class="grid stat-row">
+      <div class="stat reveal"><b><span class="count" data-to="62">0</span></b><span>份有效问卷样本</span></div>
+      <div class="stat reveal"><b><span class="count" data-to="66.1" data-dec="1">0</span><i>%</i></b><span>认为展板「无互动、体验感差」</span></div>
+      <div class="stat reveal"><b><span class="count" data-to="75.8" data-dec="1">0</span><i>%</i></b><span>希望看到垃圾伤害生物的场景</span></div>
+      <div class="stat reveal"><b><span class="count" data-to="54.8" data-dec="1">0</span><i>%</i></b><span>更接受 AR 沉浸式场景动画</span></div>
+    </div>
+
+    <div class="research-grid">
+      <div>
+        <h3 style="font-size:14px;letter-spacing:.1em;color:var(--muted);margin-bottom:16px">传统静态展板的主要问题（多选题）</h3>
+        <div class="bars">
+          <div class="bar-row"><span>无互动，体验感差</span><b>66.1%</b><div class="track"><i class="fill" data-w="66.1"></i></div></div>
+          <div class="bar-row"><span>文字太多，枯燥乏味</span><b>61.3%</b><div class="track"><i class="fill" data-w="61.3"></i></div></div>
+          <div class="bar-row"><span>画面单一，缺少视觉冲击</span><b>54.8%</b><div class="track"><i class="fill" data-w="54.8"></i></div></div>
+          <div class="bar-row"><span>内容笼统，看不到真实危害</span><b>46.8%</b><div class="track"><i class="fill" data-w="46.8"></i></div></div>
+        </div>
+        <div class="quote reveal">“知道塑料有害，但不知道它具体怎么伤害一只海龟。”<br><span style="font-family:var(--sans);font-size:12px;color:var(--muted);letter-spacing:.04em">—— 调研中反复出现的回答</span></div>
+      </div>
+      <figure class="figure reveal">
+        <img src="assets/research.jpg" alt="北京海洋馆展区调研" loading="lazy">
+        <figcaption>图 1 · 北京海洋馆现场调研：展陈以静态图文为主，缺少可参与的环保内容</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 竞品 ============ -->
+<section id="competitor" data-label="竞品分析">
+  <div class="wrap">
+    <div class="eyebrow">03 — BENCHMARK</div>
+    <h2 class="reveal">竞品分析</h2>
+    <p class="lead reveal">对比国内三个已落地的文旅 AR 科普项目，寻找「还没有被做好」的位置。</p>
+
+    <div class="grid comp-grid">
+      <div class="comp reveal">
+        <header><h3>上海野生动物园</h3><span>A</span></header>
+        <p>AR 实景导航寻宝：虚拟花猫引路、实景叠加路线，寻宝后答题抽奖。</p>
+        <p class="weak">短板：以游玩引流为核心，缺少生态创伤的深度叙事。</p>
+      </div>
+      <div class="comp reveal">
+        <header><h3>长隆野生动物世界</h3><span>B</span></header>
+        <p>微信小程序 AR：扫码调出动物 3D 模型与语音解说，轻量、易传播。</p>
+        <p class="weak">短板：内容偏物种基础介绍，环保只是点缀。</p>
+      </div>
+      <div class="comp reveal">
+        <header><h3>天津海昌极地海洋公园</h3><span>C</span></header>
+        <p>展区标识扫码 AR：触发虚拟生物动画与清理垃圾小游戏。</p>
+        <p class="weak">短板：依赖小尺寸标牌识别，缺少大面积墙体沉浸载体。</p>
+      </div>
+    </div>
+
+    <div class="gap-box reveal">
+      <div><h4>缺口 01</h4><p>市面项目多为导航、打卡、答题抽奖，环保叙事浅。</p></div>
+      <div><h4>缺口 02</h4><p>很少有作品聚焦「垃圾如何具体伤害某一种海洋生物」。</p></div>
+      <div><h4>缺口 03</h4><p>识别载体多为小标牌，缺少整幅墙面的沉浸式画面。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 05 概念 ============ -->
+<section id="concept" data-label="设计概念">
+  <div class="wrap">
+    <div class="eyebrow">04 — CONCEPT</div>
+    <h2 class="reveal">从洞察到交互</h2>
+    <p class="lead reveal">设计策略不是「再加一块屏幕」，而是把展陈画面本身变成入口。</p>
+
+    <div class="grid chain">
+      <div class="step reveal"><b>01</b><h4>洞察</h4><p>游客不是不关心，而是看不到「伤害的具体样子」。</p></div>
+      <div class="step reveal"><b>02</b><h4>策略</h4><p>用共情替代说教：让游客亲手把垃圾从海洋生物身上清理掉。</p></div>
+      <div class="step reveal"><b>03</b><h4>载体</h4><p>整幅手绘水彩画面作为 AR 识别图，墙面即入口，无需额外设备。</p></div>
+      <div class="step reveal"><b>04</b><h4>交互</h4><p>扫码进入小游戏，用 1—3 分钟完成一次「清理—反馈—科普」闭环。</p></div>
+    </div>
+
+    <p class="concept-quote reveal">画面里，海洋生物是主体，<span>垃圾是侵入者</span>；<br>游客的任务，就是把侵入者一点点拿走。</p>
+
+    <div class="formula reveal">
+      <i>生物本体</i><span>+</span><i>入侵垃圾</i><span>=</span><i>可被清理的互动对象</i><span>→</span><i>共情式科普</i>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 06 视觉 ============ -->
+<section id="visual" data-label="视觉系统">
+  <div class="wrap">
+    <div class="eyebrow">05 — VISUAL SYSTEM</div>
+    <h2 class="reveal">视觉系统</h2>
+    <p class="lead reveal">水彩手绘的温润质感，与塑料垃圾的冷硬形成对照。两幅主题画面既独立成画，也承担 AR 识别图的功能。</p>
+
+    <div class="visual-grid">
+      <div class="char-grid">
+        <div class="char reveal"><img src="assets/turtle.jpg" alt="海龟与塑料垃圾主题画面" loading="lazy"><div><b>海龟 · 误食</b><span>塑料瓶与塑料袋堆叠在龟背上</span></div></div>
+        <div class="char reveal"><img src="assets/sealion.jpg" alt="海狮与海豚主题画面" loading="lazy"><div><b>海狮 · 缠绕</b><span>以拟人化场景讲述海洋垃圾的困扰</span></div></div>
+        <figure class="figure reveal" style="grid-column:1/-1">
+          <img src="assets/scan.jpg" alt="AR 扫码体验场景" loading="lazy" style="aspect-ratio:16/9;object-fit:cover">
+          <figcaption>图 2 · 观众用手机扫描墙面画面，触发 AR 互动内容</figcaption>
+        </figure>
+      </div>
+
+      <div>
+        <h3 style="font-size:14px;letter-spacing:.1em;color:var(--muted)">主题色板 · 点击复制色值</h3>
+        <div class="swatches reveal">
+          <div class="sw" style="background:#0E3B4A" data-hex="#0E3B4A"><span>#0E3B4A</span></div>
+          <div class="sw" style="background:#2E8C8C" data-hex="#2E8C8C"><span>#2E8C8C</span></div>
+          <div class="sw" style="background:#7FD7C4" data-hex="#7FD7C4"><span>#7FD7C4</span></div>
+          <div class="sw" style="background:#F2E3C6" data-hex="#F2E3C6"><span style="color:#2b2b2b">#F2E3C6</span></div>
+          <div class="sw" style="background:#F3C969" data-hex="#F3C969"><span style="color:#2b2b2b">#F3C969</span></div>
+          <div class="sw" style="background:#FF8E72" data-hex="#FF8E72"><span>#FF8E72</span></div>
+          <div class="sw" style="background:#D9E8E4" data-hex="#D9E8E4"><span style="color:#2b2b2b">#D9E8E4</span></div>
+          <div class="sw" style="background:#1B2A30" data-hex="#1B2A30"><span>#1B2A30</span></div>
+        </div>
+
+        <div class="type-demo reveal">
+          <b>塑源 · 让污染被看见</b>
+          <small>标题字体 / 思源宋体 · 正文 / 思源黑体</small>
+          <p>标题使用衬线字体传达科普的严肃与叙事感，正文使用无衬线字体保证移动端小字号下的可读性。</p>
+        </div>
+
+        <div class="chips reveal">
+          <span class="tag">水彩手绘</span><span class="tag">低饱和海色</span><span class="tag">生物写实</span>
+          <span class="tag">垃圾高对比</span><span class="tag">留白叙事</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 07 交互 ============ -->
+<section id="interaction" data-label="交互设计">
+  <div class="wrap">
+    <div class="eyebrow">06 — INTERACTION</div>
+    <h2 class="reveal">两套玩法，一条科普主线</h2>
+    <p class="lead reveal">针对海龟与海狮两种受害方式，设计两套操作逻辑不同的小游戏，避免单一玩法带来的疲劳。</p>
+
+    <div class="tabs reveal" role="tablist">
+      <button class="tab active" data-tab="t1" role="tab" aria-selected="true">玩法 A · 海龟配对消除</button>
+      <button class="tab" data-tab="t2" role="tab" aria-selected="false">玩法 B · 海狮限时接取</button>
+    </div>
+
+    <div class="panel show" id="t1">
+      <div class="spec">
+        <div class="spec-row"><span>目标</span><p>把附着在海龟身上的垃圾两两配对清除，让它重新轻装下潜。</p></div>
+        <div class="spec-row"><span>操作</span><p>点击两块相邻的方块交换位置，三个及以上同类垃圾连成一行或一列即可消除。</p></div>
+        <div class="spec-row"><span>反馈</span><p>连击时触发气泡与音效，消除后海龟的负重层数实时下降。</p></div>
+        <div class="spec-row"><span>科普点</span><p>结算页说明：海龟常把漂浮塑料袋误认为水母，误食后无法消化。</p></div>
+      </div>
+      <div class="mock reveal">
+        <div class="mock-top"><span>STAGE 02 · 海龟清理</span><span>负重 3 / 5</span></div>
+        <div class="mock-grid">
+          <div class="mock-cell"><svg><use href="#i-bottle"></use></svg></div><div class="mock-cell hit"><svg><use href="#i-bottle"></use></svg></div><div class="mock-cell"><svg><use href="#i-bag"></use></svg></div><div class="mock-cell"><svg><use href="#i-turtle"></use></svg></div>
+          <div class="mock-cell"><svg><use href="#i-turtle"></use></svg></div><div class="mock-cell hit"><svg><use href="#i-bottle"></use></svg></div><div class="mock-cell hit"><svg><use href="#i-bottle"></use></svg></div><div class="mock-cell"><svg><use href="#i-net"></use></svg></div>
+          <div class="mock-cell"><svg><use href="#i-bag"></use></svg></div><div class="mock-cell"><svg><use href="#i-net"></use></svg></div><div class="mock-cell"><svg><use href="#i-turtle"></use></svg></div><div class="mock-cell"><svg><use href="#i-bag"></use></svg></div>
+        </div>
+        <div class="mock-bar"><i></i></div>
+        <div class="mock-note"><span>连击 ×3</span><span>目标：清空全部垃圾</span></div>
+      </div>
+    </div>
+
+    <div class="panel" id="t2">
+      <div class="spec">
+        <div class="spec-row"><span>目标</span><p>在限定时间内接住不断落下的垃圾，阻止它们沉入海狮的生活水域。</p></div>
+        <div class="spec-row"><span>操作</span><p>左右滑动屏幕移动海狮，接住垃圾得分；连续漏接会触发警示。</p></div>
+        <div class="spec-row"><span>反馈</span><p>时间条随倒计时缩短，接取成功出现水花与气泡反馈。</p></div>
+        <div class="spec-row"><span>科普点</span><p>结算页提示：废弃渔网与塑料环会缠住海狮，造成长期伤害。</p></div>
+      </div>
+      <div class="mock reveal">
+        <div class="mock-top"><span>STAGE 04 · 海狮接取</span><span>剩余 00:18</span></div>
+        <div class="mock-grid">
+          <div class="mock-cell"></div><div class="mock-cell"><svg><use href="#i-bottle"></use></svg></div><div class="mock-cell"></div><div class="mock-cell"><svg><use href="#i-bag"></use></svg></div>
+          <div class="mock-cell"><svg><use href="#i-net"></use></svg></div><div class="mock-cell"></div><div class="mock-cell"><svg><use href="#i-bottle"></use></svg></div><div class="mock-cell"></div>
+          <div class="mock-cell"></div><div class="mock-cell"><svg><use href="#i-seal"></use></svg></div><div class="mock-cell"></div><div class="mock-cell"><svg><use href="#i-net"></use></svg></div>
+        </div>
+        <div class="mock-bar"><i style="width:42%"></i></div>
+        <div class="mock-note"><span>得分 12</span><span>漏接 1</span></div>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="reveal"><em>STEP 01</em><b>扫描画面</b>手机对准墙面上的手绘海报，无需下载 App。</div>
+      <div class="reveal"><em>STEP 02</em><b>识别触发</b>识别图匹配成功后，画面元素开始在屏幕中「活」起来。</div>
+      <div class="reveal"><em>STEP 03</em><b>进入玩法</b>根据画面自动进入海龟或海狮对应的互动关卡。</div>
+      <div class="reveal"><em>STEP 04</em><b>结算科普</b>通关后弹出科普卡片，把游戏行为与真实危害对应起来。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 08 原型 ============ -->
+<section id="prototype" data-label="可玩原型">
+  <div class="wrap">
+    <div class="eyebrow">07 — PLAYABLE</div>
+    <h2 class="reveal">可玩原型</h2>
+    <p class="lead reveal">把论文里的「配对消除」压缩成一个 30 秒可玩的原型：翻开卡片，配对成对的海洋垃圾，每配对成功一次解锁一条科普信息。</p>
+
+    <div class="game-wrap">
+      <div class="memory reveal" id="memory" aria-label="配对游戏"></div>
+      <div class="game-side reveal">
+        <div class="statline">
+          <span>步数<b id="moves">0</b></span>
+          <span>配对<b id="pairs">0 / 6</b></span>
+          <span>用时<b id="time">0s</b></span>
+        </div>
+        <div class="game-msg" id="gameMsg">点击任意卡片开始。每次翻开两张，图标相同即配对成功。</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+          <button class="btn solid" id="resetGame">重新开始</button>
+          <button class="btn" id="hintBtn">提示一次</button>
+        </div>
+        <p class="game-tip">说明：此处为网页版玩法演示，用于在浏览器中快速理解交互逻辑；正式版本运行于 Unity + AR 环境，需扫描实体画面进入。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 09 开发 ============ -->
+<section id="dev" data-label="开发过程">
+  <div class="wrap">
+    <div class="eyebrow">08 — DEVELOPMENT</div>
+    <h2 class="reveal">开发过程</h2>
+    <p class="lead reveal">从手绘原画到可运行版本，主要工作集中在「识别稳定性」与「移动端流畅度」两件事上。</p>
+
+    <div class="dev-grid">
+      <div>
+        <h3 style="font-size:14px;letter-spacing:.1em;color:var(--muted);margin-bottom:14px">技术栈与工具</h3>
+        <div class="tech reveal">
+          <span>Unity</span><span>C#</span><span>移动端 AR 识别</span><span>手绘识别图</span>
+          <span>Photoshop</span><span>Illustrator</span><span>展陈打样</span><span>Android 打包</span>
+        </div>
+
+        <div class="key-list">
+          <div class="key reveal"><b>关键实现 01 · 把插画变成识别图</b><p>手绘画面本身作为 Marker，通过增强对比度与特征点密度，让墙面整幅画面在大面积、远距离下也能被稳定识别。</p></div>
+          <div class="key reveal"><b>关键实现 02 · 两套关卡逻辑</b><p>配对消除使用网格交换与行列检测；限时接取使用对象池控制下落物，保证长时间运行不产生卡顿。</p></div>
+          <div class="key reveal"><b>关键实现 03 · 结算与科普联动</b><p>把玩家行为（清理数量、漏接次数）映射为结算文案，让「玩」的结果直接对应一条污染知识。</p></div>
+        </div>
+      </div>
+
+      <div>
+        <h3 style="font-size:14px;letter-spacing:.1em;color:var(--muted);margin-bottom:8px">困难与解决方案</h3>
+        <details class="reveal" open>
+          <summary>识别不稳定：靠近能识别，退后即丢失</summary>
+          <p>通过增加识别图特征密度、提高印刷对比度、限制最佳识别距离（约 40—80cm）来解决；同时在画面上加入引导框，提示游客站到合适位置。</p>
+        </details>
+        <details class="reveal">
+          <summary>移动端性能：模型与特效导致掉帧</summary>
+          <p>压缩贴图尺寸、降低模型面数、用对象池复用垃圾实例，把帧率稳定在可接受区间，避免游客因卡顿放弃体验。</p>
+        </details>
+        <details class="reveal">
+          <summary>玩法与科普脱节：好玩但学不到东西</summary>
+          <p>把科普信息后置到结算页，并与玩家刚刚的操作一一对应：清掉几个瓶子，就讲几个瓶子对海龟的影响。</p>
+        </details>
+        <details class="reveal">
+          <summary>线下落地：屏幕反光与展区光线干扰</summary>
+          <p>在展陈小样阶段测试不同光照与拍摄角度，最终选择哑光相纸输出，减少反光对识别的影响。</p>
+        </details>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 10 进度 ============ -->
+<section id="timeline" data-label="进度迭代">
+  <div class="wrap">
+    <div class="eyebrow">09 — PROCESS</div>
+    <h2 class="reveal">进度与迭代</h2>
+    <p class="lead reveal">从选题调研到展陈落地，项目经历了玩法重做与多轮版本打磨。</p>
+
+    <div class="tl">
+      <div class="tl-item done reveal"><h4><em>2026.03</em>选题与调研</h4><p>确定北京海洋馆环保科普方向，完成 62 份问卷与三地竞品分析。</p></div>
+      <div class="tl-item done reveal"><h4><em>2026.04</em>概念与视觉</h4><p>确定「生物本体 + 入侵垃圾」的构图策略，完成两幅主题手绘与色彩体系。</p></div>
+      <div class="tl-item done reveal"><h4><em>2026.05</em>首个 AR 原型</h4><p>在 Unity 中跑通识别与模型展示，验证「扫描—出现」的基本链路。</p></div>
+      <div class="tl-item done reveal"><h4><em>2026.07</em>玩法重做</h4><p>放弃「扫描出文字 + 答题」的浅交互，改为两套可操作的小游戏。</p></div>
+      <div class="tl-item done reveal"><h4><em>2026.09</em>迭代与测试</h4><p>连续迭代 v2 → v7.6，修正识别稳定性与移动端性能问题。</p></div>
+      <div class="tl-item done reveal"><h4><em>2026.11</em>展陈与答辩</h4><p>完成展板、识别图输出与实体小样，形成可落地的展陈方案。</p></div>
+    </div>
+
+    <div class="legend"><span>● 已完成</span><span>○ 进行中</span></div>
+
+    <h3 style="font-size:14px;letter-spacing:.1em;color:var(--muted);margin-top:34px">版本迭代记录</h3>
+    <div class="versions">
+      <div class="ver"><b>v2</b><span>QTE 原型</span><p>验证点击与限时操作，玩法单一，识别后只能展示模型。</p></div>
+      <div class="ver"><b>v5</b><span>结构清理</span><p>重整场景与资源结构，统一 UI 与音效触发逻辑。</p></div>
+      <div class="ver"><b>v6</b><span>配对消除</span><p>加入海龟配对玩法与消除反馈，形成第一套完整关卡。</p></div>
+      <div class="ver"><b>v7.x</b><span>双玩法整合</span><p>补齐海狮限时接取，优化性能与识别稳定性，接近交付版本。</p></div>
+    </div>
+
+    <h3 style="font-size:14px;letter-spacing:.1em;color:var(--muted);margin-top:26px">改动对比 · 拖动查看</h3>
+    <div class="compare" id="compare">
+      <img src="assets/before.jpg" alt="海龟背负塑料垃圾的画面">
+      <img src="assets/after.jpg" alt="清理塑料垃圾后的海龟画面" class="top-img">
+      <div class="divider"></div>
+      <span class="cap l">清理前 · 垃圾附着</span>
+      <span class="cap r">清理后 · 恢复轻装</span>
+      <input type="range" min="0" max="100" value="55" aria-label="对比清理前后画面">
+    </div>
+  </div>
+</section>
+
+<!-- ============ 11 成果 ============ -->
+<section id="results" data-label="最终成果">
+  <div class="wrap">
+    <div class="eyebrow">10 — OUTCOME</div>
+    <h2 class="reveal">最终成果</h2>
+    <p class="lead reveal">两幅主题画面、两套互动玩法、一套可落地的展陈方案。</p>
+
+    <div class="gallery">
+      <div class="gal reveal"><img src="assets/turtle.jpg" alt="海龟主题画面" loading="lazy"><span>主题画面 A</span></div>
+      <div class="gal reveal"><img src="assets/sealion.jpg" alt="海狮主题画面" loading="lazy"><span>主题画面 B</span></div>
+      <div class="gal reveal"><img src="assets/scan.jpg" alt="AR 扫码体验" loading="lazy"><span>AR 体验场景</span></div>
+      <div class="gal reveal"><img src="assets/research.jpg" alt="展陈调研现场" loading="lazy"><span>展陈现场</span></div>
+    </div>
+
+    <div class="result-facts">
+      <div class="reveal"><b>2</b><span>套互动玩法</span></div>
+      <div class="reveal"><b>2</b><span>幅 AR 识别画面</span></div>
+      <div class="reveal"><b>7</b><span>个迭代版本</span></div>
+      <div class="reveal"><b>2,332</b><span>元模拟落地预算</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 12 反思 ============ -->
+<section id="reflection" data-label="反思展望">
+  <div class="wrap">
+    <div class="eyebrow">11 — REFLECTION</div>
+    <h2 class="reveal">反思与展望</h2>
+
+    <div class="grid reflect">
+      <div class="card reveal">
+        <h3>这次做对了什么</h3>
+        <p>把科普从「读」变成「做」。当游客亲手把垃圾清走，知识才和身体感受绑定在一起。</p>
+      </div>
+      <div class="card reveal">
+        <h3>还不够好的地方</h3>
+        <ul>
+          <li>识别稳定性受光线与角度影响，仍需现场调试</li>
+          <li>两套玩法的难度曲线尚未按年龄细分</li>
+          <li>缺少长期运营的内容更新机制</li>
+        </ul>
+      </div>
+      <div class="card reveal">
+        <h3>下一步可以做什么</h3>
+        <ul>
+          <li>增加更多海洋生物与污染类型的关卡</li>
+          <li>接入数据记录，统计游客停留与通关情况</li>
+          <li>把展陈扩展为可持续更新的系列科普</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 13 尾页 ============ -->
+<section id="end" data-label="关于作者">
+  <div class="wrap">
+    <div class="eyebrow">12 — END</div>
+    <p class="end-title reveal">让科普被看见，<br>也被<span>玩到</span>。</p>
+    <div class="end-meta">
+      <div><b>作品</b>塑源 · 北京海洋馆 AR 环保科普设计</div>
+      <div><b>作者</b>于嘉润 · 数字媒体艺术</div>
+      <div><b>院校</b>北京工业大学耿丹学院 · 国际设计学院</div>
+      <div><b>时间</b>2026</div>
+    </div>
+    <footer>
+      <span>© 2026 于嘉润 · 本页面为「重点作品深度介绍网页」课程作业</span>
+      <span>使用 HTML / CSS / JavaScript 构建 · 支持移动端</span>
+    </footer>
+  </div>
+</section>
+
+<div class="to-top" id="toTop" aria-label="返回顶部">
+  <svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</div>
+<div class="pager">
+  <button id="prevSec">上一节</button>
+  <span id="pagerLabel">01 / 13</span>
+  <button id="nextSec">下一节</button>
+</div>
+
+<div class="lightbox" id="lightbox"><img src="" alt=""><p></p></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-turtle" viewBox="0 0 48 48"><ellipse cx="22" cy="26" rx="12" ry="10"/><path d="M22 16v20M10 26h24M34 22c3-2 6-1 7 2 1 3-2 5-5 5"/><path d="M10 20l-4-4M10 32l-4 4M22 16l-2-5M22 36l-2 5"/></symbol>
+  <symbol id="i-bottle" viewBox="0 0 48 48"><path d="M20 6h8v7l4 4v22a4 4 0 0 1-4 4h-8a4 4 0 0 1-4-4V17l4-4z"/><path d="M20 24h8M20 30h8"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 48 48"><path d="M12 16h24l-2 24H14z"/><path d="M18 16c0-6 12-6 12 0"/></symbol>
+  <symbol id="i-net" viewBox="0 0 48 48"><path d="M8 10c10 8 22 8 32 0"/><path d="M10 14l-2 22M18 20l-3 22M26 20l3 22M36 14l6 22"/><path d="M12 26h24M14 34h20"/></symbol>
+  <symbol id="i-fish" viewBox="0 0 48 48"><path d="M8 24c6-8 18-10 26-2 4 4 4 4 6 8-2 4-2 4-6 8-8 8-20 6-26-2"/><path d="M8 24l-4-6v12z"/><circle cx="28" cy="21" r="1.4"/></symbol>
+  <symbol id="i-coral" viewBox="0 0 48 48"><path d="M24 42V20M24 28c-6 0-8-6-8-12M24 24c6 0 8-6 8-14"/><path d="M12 16v-6M34 10V4M16 20l-4-4M32 20l4-4"/></symbol>
+  <symbol id="i-seal" viewBox="0 0 48 48"><path d="M9 31c0-9 8-15 17-15 7 0 10 4 10 8 0 4-2 6-2 9 0 2 3 3 6 4-3 3-7 2-10 1-4 3-9 3-13 1-5-2-8-5-8-8z"/><circle cx="32" cy="22" r="1.3"/><path d="M13 29l-5 2 5 4"/></symbol>
+</svg>
+
+<script>
+/* ============ 数据 ============ */
+const SECTIONS = [...document.querySelectorAll('section')].map(s => ({id:s.id,label:s.dataset.label}));
+
+/* ============ 章节点 / 菜单 ============ */
+const dots = document.getElementById('dots');
+const menuGrid = document.getElementById('menuGrid');
+SECTIONS.forEach((s,i)=>{
+  const a = document.createElement('a');
+  a.href = '#' + s.id; a.className = 'dot'; a.dataset.label = s.label;
+  a.dataset.target = s.id; a.setAttribute('aria-label', s.label);
+  dots.appendChild(a);
+  const m = document.createElement('a');
+  m.href = '#' + s.id;
+  m.innerHTML = '<b>' + String(i+1).padStart(2,'0') + '</b><span>' + s.label + '</span>';
+  m.addEventListener('click', ()=> overlay.classList.remove('open'));
+  menuGrid.appendChild(m);
+});
+
+const overlay = document.getElementById('menuOverlay');
+document.getElementById('menuBtn').onclick = ()=> overlay.classList.add('open');
+document.getElementById('menuClose').onclick = ()=> overlay.classList.remove('open');
+overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.classList.remove('open'); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ overlay.classList.remove('open'); closeLightbox(); } });
+
+/* ============ 主题 ============ */
+const root = document.documentElement;
+const saved = localStorage.getItem('sy-theme');
+if(saved) root.dataset.theme = saved;
+document.getElementById('themeBtn').onclick = ()=>{
+  root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('sy-theme', root.dataset.theme);
+};
+
+/* ============ 气泡 ============ */
+const bubbles = document.getElementById('bubbles');
+for(let i=0;i<14;i++){
+  const b = document.createElement('div');
+  b.className='bubble';
+  const size = 6 + Math.random()*26;
+  b.style.width=size+'px'; b.style.height=size+'px';
+  b.style.left=(Math.random()*100)+'%';
+  b.style.animationDuration=(12+Math.random()*14)+'s';
+  b.style.animationDelay=(-Math.random()*20)+'s';
+  bubbles.appendChild(b);
+}
+
+/* ============ 滚动进度 / 导航高亮 ============ */
+const progress = document.getElementById('progress');
+const dotEls = [...dots.children];
+const toTop = document.getElementById('toTop');
+let current = 0;
+
+function onScroll(){
+  const h = document.documentElement;
+  const max = h.scrollHeight - h.clientHeight;
+  progress.style.width = (max>0 ? (h.scrollTop/max*100) : 0) + '%';
+  toTop.classList.toggle('show', h.scrollTop > 600);
+
+  let idx = 0;
+  SECTIONS.forEach((s,i)=>{
+    const el = document.getElementById(s.id);
+    if(el.getBoundingClientRect().top <= window.innerHeight*0.42) idx = i;
+  });
+  if(idx !== current){
+    current = idx;
+    dotEls.forEach((d,i)=> d.classList.toggle('active', i===idx));
+    pagerLabel.textContent = String(idx+1).padStart(2,'0') + ' / ' + String(SECTIONS.length).padStart(2,'0');
+  }
+  const bg = document.getElementById('heroBg');
+  if(bg) bg.style.transform = 'scale(1.06) translateY(' + (h.scrollTop*0.06) + 'px)';
+}
+window.addEventListener('scroll', onScroll, {passive:true});
+onScroll();
+
+/* ============ 翻页按钮 ============ */
+const pagerLabel = document.getElementById('pagerLabel');
+document.getElementById('prevSec').onclick = ()=>{
+  const i = Math.max(0, current-1);
+  document.getElementById(SECTIONS[i].id).scrollIntoView({behavior:'smooth'});
+};
+document.getElementById('nextSec').onclick = ()=>{
+  const i = Math.min(SECTIONS.length-1, current+1);
+  document.getElementById(SECTIONS[i].id).scrollIntoView({behavior:'smooth'});
+};
+toTop.onclick = ()=> window.scrollTo({top:0,behavior:'smooth'});
+
+/* ============ 出现动画 / 计数器 / 进度条 ============ */
+const io = new IntersectionObserver((entries)=>{
+  entries.forEach(en=>{
+    if(!en.isIntersecting) return;
+    en.target.classList.add('in');
+    en.target.querySelectorAll?.('.fill').forEach(f=> f.style.width = f.dataset.w + '%');
+    en.target.querySelectorAll?.('.count').forEach(c=>{
+      if(c.dataset.done) return;
+      c.dataset.done = '1';
+      const to = parseFloat(c.dataset.to), dec = parseInt(c.dataset.dec||'0',10);
+      const start = performance.now(), dur = 1200;
+      const tick = (t)=>{
+        const p = Math.min(1,(t-start)/dur);
+        const v = to * (1-Math.pow(1-p,3));
+        c.textContent = dec ? v.toFixed(dec) : Math.round(v);
+        if(p<1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    io.unobserve(en.target);
+  });
+},{threshold:.18});
+document.querySelectorAll('.reveal').forEach(el=> io.observe(el));
+
+/* ============ Tabs ============ */
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.onclick = ()=>{
+    document.querySelectorAll('.tab').forEach(b=>{b.classList.remove('active'); b.setAttribute('aria-selected','false');});
+    btn.classList.add('active'); btn.setAttribute('aria-selected','true');
+    document.querySelectorAll('.panel').forEach(p=> p.classList.remove('show'));
+    document.getElementById(btn.dataset.tab).classList.add('show');
+  };
+});
+
+/* ============ 色值复制 ============ */
+document.querySelectorAll('.sw').forEach(sw=>{
+  sw.onclick = async ()=>{
+    try{
+      await navigator.clipboard.writeText(sw.dataset.hex);
+      sw.animate([{transform:'scale(1)'},{transform:'scale(.94)'},{transform:'scale(1)'}],{duration:220});
+    }catch(e){}
+  };
+});
+
+/* ============ Lightbox ============ */
+const lb = document.getElementById('lightbox');
+const lbImg = lb.querySelector('img');
+const lbCap = lb.querySelector('p');
+document.querySelectorAll('.gal').forEach(g=>{
+  g.onclick = ()=>{
+    const img = g.querySelector('img');
+    lbImg.src = img.src; lbCap.textContent = g.querySelector('span').textContent;
+    lb.classList.add('open');
+  };
+});
+function closeLightbox(){ lb.classList.remove('open'); }
+lb.onclick = closeLightbox;
+
+/* ============ 前后对比滑块 ============ */
+const cmp = document.getElementById('compare');
+if(cmp){
+  const input = cmp.querySelector('input');
+  const apply = ()=> cmp.style.setProperty('--cut', input.value + '%');
+  input.addEventListener('input', apply); apply();
+}
+
+/* ============ 配对游戏 ============ */
+const ICONS = [
+  {id:'turtle', fact:'海龟常把漂浮的塑料袋误认成水母，误食后无法消化。'},
+  {id:'bottle', fact:'一个塑料瓶在海水中可能需要数百年才能分解。'},
+  {id:'bag', fact:'塑料袋缠绕会让海龟难以游动，甚至无法上浮换气。'},
+  {id:'net', fact:'废弃渔网是海洋生物被缠绕的主要来源之一。'},
+  {id:'fish', fact:'塑料破碎成微塑料后，会沿食物链回到餐桌。'},
+  {id:'coral', fact:'塑料覆盖会遮挡珊瑚生长所需的光线。'}
+];
+const board = document.getElementById('memory');
+const movesEl = document.getElementById('moves');
+const pairsEl = document.getElementById('pairs');
+const timeEl = document.getElementById('time');
+const msgEl = document.getElementById('gameMsg');
+let deck = [], first = null, lock = false, moves = 0, matched = 0, timer = null, seconds = 0;
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+function newGame(){
+  clearInterval(timer); timer=null; seconds=0; moves=0; matched=0; first=null; lock=false;
+  movesEl.textContent='0'; pairsEl.textContent='0 / 6'; timeEl.textContent='0s';
+  msgEl.innerHTML='点击任意卡片开始。每次翻开两张，图标相同即配对成功。';
+  deck = shuffle([...ICONS, ...ICONS]);
+  board.innerHTML = '';
+  deck.forEach((item, i)=>{
+    const card = document.createElement('button');
+    card.className='mcard'; card.dataset.id=item.id; card.dataset.fact=item.fact;
+    card.setAttribute('aria-label','未翻开的卡片');
+    card.innerHTML = '<div class="inner"><div class="face back"></div><div class="face front"><svg><use href="#i-'+item.id+'"></use></svg></div></div>';
+    card.addEventListener('click', ()=> flip(card));
+    board.appendChild(card);
+  });
+}
+
+function startTimer(){
+  if(timer) return;
+  timer = setInterval(()=>{ seconds++; timeEl.textContent = seconds + 's'; }, 1000);
+}
+
+function flip(card){
+  if(lock || card.classList.contains('flip') || card.classList.contains('matched')) return;
+  startTimer();
+  card.classList.add('flip');
+  if(!first){ first = card; return; }
+  moves++; movesEl.textContent = moves; lock = true;
+  if(first.dataset.id === card.dataset.id){
+    setTimeout(()=>{
+      first.classList.add('matched'); card.classList.add('matched');
+      matched++; pairsEl.textContent = matched + ' / 6';
+      msgEl.innerHTML = '<strong>配对成功</strong> · ' + card.dataset.fact;
+      first = null; lock = false;
+      if(matched === 6){
+        clearInterval(timer);
+        msgEl.innerHTML = '<strong>清理完成！</strong> 你用了 ' + moves + ' 步、' + seconds + ' 秒。现实中，这些垃圾可能需要数百年才会消失。';
+      }
+    }, 420);
+  } else {
+    setTimeout(()=>{
+      first.classList.remove('flip'); card.classList.remove('flip');
+      first = null; lock = false;
+    }, 780);
+  }
+}
+
+document.getElementById('resetGame').onclick = newGame;
+document.getElementById('hintBtn').onclick = ()=>{
+  const hidden = [...board.children].filter(c=> !c.classList.contains('flip') && !c.classList.contains('matched'));
+  if(!hidden.length) return;
+  const target = hidden[Math.floor(Math.random()*hidden.length)];
+  target.classList.add('flip');
+  msgEl.innerHTML = '提示：注意这张卡片的位置，记住它的图标。';
+  setTimeout(()=> target.classList.remove('flip'), 900);
+};
+newGame();
+
+const params = new URLSearchParams(location.search);
+const target = params.get('section');
+const focus = params.get('focus');
+if(params.get('debug') === '1'){
+  setTimeout(()=>{
+    const w = document.documentElement.clientWidth;
+    const bad = [...document.querySelectorAll('*')].filter(el=>{
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && (r.right > w + 1 || r.left < -1);
+    }).slice(0,8).map(el=> el.tagName + '.' + (el.className||'').toString().split(' ')[0] + ':' + Math.round(el.getBoundingClientRect().width));
+    document.title = 'W' + w + '|SW' + document.documentElement.scrollWidth + '|' + bad.join(',');
+  }, 300);
+}
+if(focus){
+  document.documentElement.classList.add('focus-mode','static');
+  const fe = document.getElementById(focus);
+  if(fe) fe.classList.add('focus');
+}
+if(params.get('static') === '1' || focus){
+  document.documentElement.classList.add('static');
+  document.querySelectorAll('.reveal').forEach(el=> el.classList.add('in'));
+  document.querySelectorAll('.fill').forEach(f=> f.style.width = f.dataset.w + '%');
+  document.querySelectorAll('.count').forEach(c=>{ c.textContent = c.dataset.to; c.dataset.done='1'; });
+}
+if(target){
+  const el = document.getElementById(target);
+  if(el){
+    document.documentElement.style.scrollBehavior = 'auto';
+    setTimeout(()=>{ el.scrollIntoView({block:'start'}); window.scrollBy(0,-72); }, 200);
+  }
+}
+</script>
+</body>
+</html>
